@@ -1,8 +1,8 @@
-# Funretro.io text export
+# FunRetro.io export
 
 [![License][license-badge]][license-url]
 
-> CLI tool to easily export Funretro.io retrospective boards using Puppeteer
+> CLI tool to easily export [FunRetro.io](https://funretro.io/) retrospective boards using Puppeteer
 
 ## Installing / Getting started
 
