@@ -2,7 +2,7 @@
 
 [![License][license-badge]][license-url]
 
-> CLI tool to easily export [FunRetro.io](https://funretro.io/) retrospective boards using Puppeteer
+> CLI tool to easily export [FunRetro.io](https://funretro.io/) retrospective boards using Playwright
 
 ## Installing / Getting started
 
