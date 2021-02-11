@@ -2,7 +2,11 @@
 
 [![License][license-badge]][license-url]
 
+<<<<<<< HEAD
 > CLI tool to easily export [EasyRetro.io](https://funretro.io/) retrospective boards using Playwright
+=======
+> CLI tool to easily export [FunRetro.io](https://funretro.io/) retrospective boards using Playwright
+>>>>>>> f83f1767de596b772bd2137ba22056e69e380bdb
 
 ## Installing / Getting started
 
