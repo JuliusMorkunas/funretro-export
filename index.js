@@ -8,6 +8,10 @@ if (!url) {
   throw 'Please provide a URL as the first argument.';
 }
 
+let boardTitle = '';
+
+const getInnerText = (node) => node.innerText.trim();
+
 async function run() {
   const browser = await chromium.launch();
   const page = await browser.newPage();
@@ -15,27 +19,56 @@ async function run() {
   await page.goto(url);
   await page.waitForSelector('.message-list');
 
-  const boardTitle = await page.$eval('#board-name', (node) => node.innerText.trim());
+  boardTitle = await page.$eval('.board-name', getInnerText);
 
   if (!boardTitle) {
-    throw 'Board title does not exist. Please check if provided URL is correct.'
+    throw 'Board title does not exist. Please check if provided URL is correct.';
   }
 
-  let parsedText = boardTitle + '\n\n';
+  let parsedText = `# ${boardTitle}\n\n`;
 
   const columns = await page.$$('.message-list');
 
   for (let i = 0; i < columns.length; i++) {
-    const columnTitle = await columns[i].$eval('.column-header', (node) => node.innerText.trim());
+    const columnTitle = await columns[i].$eval(
+      '.column-header > h2',
+      getInnerText
+    );
 
-    const messages = await columns[i].$$('.message-main');
+    const messages = await columns[i].$$('.column > li');
     if (messages.length) {
-      parsedText += columnTitle + '\n';
+      parsedText += `## ${columnTitle}\n`;
     }
     for (let i = 0; i < messages.length; i++) {
-      const messageText = await messages[i].$eval('.message-body .text', (node) => node.innerText.trim());
-      const votes = await messages[i].$eval('.votes .vote-area span.show-vote-count', (node) => node.innerText.trim());
-      parsedText += `- ${messageText} (${votes})` + '\n';
+      const messageText = await messages[i].$eval(
+        '.message-body .text',
+        getInnerText
+      );
+
+      const votesCount = await messages[
+        i
+      ].$eval('.votes .vote-area span.show-vote-count', (node) =>
+        node.innerText.trim()
+      );
+      const votesCountText = votesCount > 0 ? `(+${votesCount})` : '';
+      parsedText += `- ${messageText} ${votesCountText}\n`;
+
+      commentsCount = await messages[i].$eval('.comments-count', getInnerText);
+      if (Number(commentsCount) > 0) {
+        await messages[i].$eval('[aria-label="New comment"]', (node) =>
+          node.click()
+        );
+        const comments = await messages[i].$$('.comment');
+        if (comments.length) {
+          for (let i = 0; i < comments.length; i++) {
+            const commentText = await comments[i].$eval(
+              '.comment > span',
+              getInnerText
+            );
+            parsedText += `\t- ${commentText}\n`;
+          }
+        }
+      }
     }
 
     if (messages.length) {
@@ -47,7 +80,13 @@ async function run() {
 }
 
 function writeToFile(filePath, data) {
-  const resolvedPath = path.resolve(filePath || `../${data.split('\n')[0].replace('/', '')}.txt`);
+  const datetime = new Date();
+  const resolvedPath = path.resolve(
+    filePath ||
+      `../${boardTitle.replace('/', '')} - ${datetime
+        .toISOString()
+        .slice(0, 10)}.txt`
+  );
   fs.writeFile(resolvedPath, data, (error) => {
     if (error) {
       throw error;
@@ -62,4 +101,6 @@ function handleError(error) {
   console.error(error);
 }
 
-run().then((data) => writeToFile(file, data)).catch(handleError);
+run()
+  .then((data) => writeToFile(file, data))
+  .catch(handleError);
