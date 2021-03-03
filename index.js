@@ -17,7 +17,7 @@ async function run() {
   const page = await browser.newPage();
 
   await page.goto(url);
-  await page.waitForSelector('.message-list');
+  await page.waitForSelector('.easy-board');
 
   boardTitle = await page.$eval('.board-name', getInnerText);
 
@@ -27,7 +27,7 @@ async function run() {
 
   let parsedText = `# ${boardTitle}\n\n`;
 
-  const columns = await page.$$('.message-list');
+  const columns = await page.$$('.easy-card-list');
 
   for (let i = 0; i < columns.length; i++) {
     const columnTitle = await columns[i].$eval(
@@ -41,19 +41,19 @@ async function run() {
     }
     for (let i = 0; i < messages.length; i++) {
       const messageText = await messages[i].$eval(
-        '.message-body .text',
+        '.easy-card-body .text',
         getInnerText
       );
 
       const votesCount = await messages[
         i
-      ].$eval('.votes .vote-area span.show-vote-count', (node) =>
+      ].$eval('.easy-card-vote-area span.easy-badge-votes', (node) =>
         node.innerText.trim()
       );
       const votesCountText = votesCount > 0 ? `(+${votesCount})` : '';
       parsedText += `- ${messageText} ${votesCountText}\n`;
 
-      commentsCount = await messages[i].$eval('.comments-count', getInnerText);
+      const commentsCount = await messages[i].$eval('[aria-label="New comment"] .easy-badge-votes', getInnerText);
       if (Number(commentsCount) > 0) {
         await messages[i].$eval('[aria-label="New comment"]', (node) =>
           node.click()
@@ -62,7 +62,7 @@ async function run() {
         if (comments.length) {
           for (let i = 0; i < comments.length; i++) {
             const commentText = await comments[i].$eval(
-              '.comment > span',
+              '.comment .text',
               getInnerText
             );
             parsedText += `\t- ${commentText}\n`;
