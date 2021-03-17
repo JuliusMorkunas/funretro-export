@@ -18,6 +18,7 @@ async function run() {
 
   await page.goto(url);
   await page.waitForSelector('.easy-board');
+  await page.waitForSelector('.board-name');
 
   boardTitle = await page.$eval('.board-name', getInnerText);
 
@@ -32,7 +33,7 @@ async function run() {
   for (let i = 0; i < columns.length; i++) {
     const columnTitle = await columns[i].$eval(
       '.column-header > h2',
-      getInnerText
+      getInnerText,
     );
 
     const messages = await columns[i].$$('.column > li');
@@ -42,28 +43,34 @@ async function run() {
     for (let i = 0; i < messages.length; i++) {
       const messageText = await messages[i].$eval(
         '.easy-card-body .text',
-        getInnerText
+        getInnerText,
       );
 
       const votesCount = await messages[
         i
-      ].$eval('.easy-card-vote-area span.easy-badge-votes', (node) =>
-        node.innerText.trim()
+        ].$eval('.easy-card-votes-container span.easy-badge-votes', (node) =>
+        node.innerText.trim(),
       );
       const votesCountText = votesCount > 0 ? `(+${votesCount})` : '';
       parsedText += `- ${messageText} ${votesCountText}\n`;
 
-      const commentsCount = await messages[i].$eval('[aria-label="New comment"] .easy-badge-votes', getInnerText);
+      let commentsCount = 0;
+      try {
+        commentsCount =
+          await messages[i].$eval('[aria-label="New comment"] .easy-badge-votes', getInnerText);
+      } catch {
+        // TODO: Review comments selector
+      }
       if (Number(commentsCount) > 0) {
         await messages[i].$eval('[aria-label="New comment"]', (node) =>
-          node.click()
+          node.click(),
         );
         const comments = await messages[i].$$('.comment');
         if (comments.length) {
           for (let i = 0; i < comments.length; i++) {
             const commentText = await comments[i].$eval(
               '.comment .text',
-              getInnerText
+              getInnerText,
             );
             parsedText += `\t- ${commentText}\n`;
           }
@@ -83,15 +90,15 @@ function writeToFile(filePath, data) {
   const datetime = new Date();
   const resolvedPath = path.resolve(
     filePath ||
-      `../${boardTitle.replace('/', '')} - ${datetime
-        .toISOString()
-        .slice(0, 10)}.txt`
+    `../${boardTitle.replace('/', '')} - ${datetime
+      .toISOString()
+      .slice(0, 10)}.txt`,
   );
   fs.writeFile(resolvedPath, data, (error) => {
     if (error) {
       throw error;
     } else {
-      console.log(`Successfully written to file at: ${resolvedPath}`);
+      console.info(`Successfully written to file at: ${resolvedPath}`);
     }
     process.exit();
   });
